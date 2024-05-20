@@ -3,8 +3,12 @@ from PIL import Image
 import wikipediaapi
 from wordcloud import WordCloud, STOPWORDS
 
-def generate_wordcloud(topic):
-    wiki_wiki = wikipediaapi.Wikipedia('en')
+def generate_wordcloud():
+    topic = input("Enter the name of the topic you want to create a word cloud for: ")
+    
+    user_agent = "WordCloudGenerator/1.0 (your_email@example.com)"
+    
+    wiki_wiki = wikipediaapi.Wikipedia('en', user_agent=user_agent)
     
     page = wiki_wiki.page(topic)
     
@@ -16,7 +20,11 @@ def generate_wordcloud(topic):
 
     print(f"Generating word cloud for: {page.title}")
 
-    background_image = np.array(Image.open("abcd.jpg"))
+    try:
+        background_image = np.array(Image.open("abcd.jpg"))
+    except FileNotFoundError:
+        print("Background image 'abcd.jpg' not found.")
+        return
 
     stop_words = set(STOPWORDS)
 
@@ -33,5 +41,4 @@ def generate_wordcloud(topic):
     print(f"Word cloud saved as {output_file}")
 
 
-    topic = input("Enter the name of the topic you want to create a word cloud for: ")
-    generate_wordcloud(topic)
+    generate_wordcloud()
