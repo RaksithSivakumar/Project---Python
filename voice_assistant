@@ -1,0 +1,54 @@
+import speech_recognition as sr
+import pyttsx3
+import wikipedia
+import datetime
+
+recognizer = sr.Recognizer()
+engine = pyttsx3.init()
+
+def speak(text):
+    engine.say(text)
+    engine.runAndWait()
+
+def take_command():
+    with sr.Microphone() as source:
+        print("Listening...")
+        recognizer.pause_threshold = 1
+        audio = recognizer.listen(source)
+        try:
+            print("Recognizing...")
+            query = recognizer.recognize_google(audio, language='en-in')
+            print(f"User said: {query}\n")
+        except Exception as e:
+            print("Sorry, I didn't catch that. Please say that again.")
+            return "None"
+        return query.lower()
+
+def voice_assistant():
+    speak("How can I assist you today?")
+    
+    while True:
+        query = take_command()
+
+        if 'wikipedia' in query:
+            speak("Searching Wikipedia...")
+            query = query.replace("wikipedia", "")
+            results = wikipedia.summary(query, sentences=2)
+            speak(f"According to Wikipedia, {results}")
+
+        elif 'time' in query:
+            time = datetime.datetime.now().strftime('%H:%M:%S')
+            speak(f"The current time is {time}")
+        
+        elif 'date' in query:
+            date = datetime.datetime.now().strftime('%Y-%m-%d')
+            speak(f"Today's date is {date}")
+        
+        elif 'stop' in query or 'exit' in query:
+            speak("Goodbye!")
+            break
+        
+        else:
+            speak("Sorry, I can't do that yet.")
+
+voice_assistant()
