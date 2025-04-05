@@ -16,14 +16,10 @@ url = 'https://en.wikipedia.org/wiki/List_of_largest_companies_in_the_United_Sta
 page = requests.get(url)
 soup = BeautifulSoup(page.text, 'html.parser')
 
-# Find the desired table
 table = soup.find('table', {'class': 'wikitable sortable'})
 headers = [header.text.strip() for header in table.find_all('th')]
-
-# Create a DataFrame
 df = pd.DataFrame(columns=headers)
 
-# Extract and append rows
 for row in table.find_all('tr')[1:]:
     cells = row.find_all('td')
     values = [cell.text.strip() for cell in cells]
@@ -37,31 +33,41 @@ df['Employees'] = df['Employees'].str.replace('[^\d]', '', regex=True).astype(in
 
 print("Cleaned DataFrame:\n", df.head())
 
-# Step 3: Upload to Airtable
-# FIRST check your Airtable field names and adjust these to match exactly:
+# Step 3: Fetch existing company names from Airtable to avoid duplicates
+existing_records = airtable_table.all()
+existing_names = {record['fields'].get('Name', '').strip() for record in existing_records}
+
+# Step 4: Upload new records only
 FIELD_NAMES = {
-    'rank': 'Rank',  # Airtable field name: Your field name
+    'rank': 'Rank',
     'name': 'Name',
     'industry': 'Industry',
-    'revenue': 'Revenue (USD millions)',  # This needs to match your Airtable's revenue field name
+    'revenue': 'Revenue (USD millions)',
     'employees': 'Employees',
     'hq': 'Headquarters'
 }
 
+new_records = 0
 for index, row in df.iterrows():
+    company_name = row['Name'].strip()
+    if company_name in existing_names:
+        print(f"⏩ Skipping already existing record: {company_name}")
+        continue
+
     record = {
         FIELD_NAMES['rank']: row['Rank'],
-        FIELD_NAMES['name']: row['Name'],
+        FIELD_NAMES['name']: company_name,
         FIELD_NAMES['industry']: row['Industry'],
         FIELD_NAMES['revenue']: row['Revenue (USD millions)'],
         FIELD_NAMES['employees']: row['Employees'],
         FIELD_NAMES['hq']: row['Headquarters']
     }
-    
+
     try:
         airtable_table.create(record)
-        print(f"✅ Successfully inserted record {index + 1}: {row['Name']}")
+        print(f"✅ Inserted: {company_name}")
+        new_records += 1
     except Exception as e:
-        print(f"❌ Error inserting record {index + 1} ({row['Name']}): {str(e)}")
+        print(f"❌ Error inserting {company_name}: {str(e)}")
 
-print("✅ Data insertion process completed.")
+print(f"✅ Data insertion completed. {new_records} new record(s) inserted.")
